@@ -1,163 +1,68 @@
-import 'dart:convert';
-
-import 'package:firebase_ai/firebase_ai.dart';
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:grocerai/features/home/presentation/bloc/price_scanner_bloc/price_scanner_bloc.dart';
+import 'package:grocerai/features/home/presentation/bloc/price_scanner_bloc/price_scanner_state.dart';
 
-class PriceScannerPage extends StatefulWidget {
+class PriceScannerPage extends StatelessWidget {
   const PriceScannerPage({super.key});
 
   @override
-  State<PriceScannerPage> createState() => _PriceScannerPageState();
-}
-
-class _PriceScannerPageState extends State<PriceScannerPage> {
-  late CameraController _cameraController;
-  final TextRecognizer _textRecognizer = TextRecognizer();
-
-  bool _isInitialized = false;
-  bool _isProcessing = false;
-  String price = '';
-
-  final model = FirebaseAI.googleAI().generativeModel(
-    model: 'gemini-2.5-flash',
-    generationConfig: GenerationConfig(responseMimeType: 'application/json'),
-  );
-
-  String buildPricePrompt(String ocrText) {
-    return """
-          You are given raw OCR text extracted from a product price tag.
-          
-          Task:
-          - Extract the FINAL product price ONLY.
-          - Ignore quantities, weights (g, kg, ml), barcodes, dates, discounts, and store codes.
-          - Prefer values that look like a price
-          - If multiple prices exist, return the MOST LIKELY final price.
-          
-          Return format (STRICT):
-          {
-            "price": number
-          }
-          
-          Rules:
-          - "price" MUST be a number (not a string).
-          - Do NOT include currency symbols.
-          - Do NOT include any additional text.
-          - If no valid price is found, return:
-            { "price": null }
-          
-          OCR TEXT:
-          ${ocrText}
-          """;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-  }
-
-  Future<void> _initializeCamera() async {
-    try {
-      final cameras = await availableCameras();
-      final backCamera = cameras.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.back,
-      );
-
-      _cameraController = CameraController(
-        backCamera,
-        ResolutionPreset.high,
-        enableAudio: false,
-      );
-
-      await _cameraController.initialize();
-
-      if (mounted) {
-        setState(() => _isInitialized = true);
-      }
-    } catch (e) {
-      debugPrint('Camera init error: $e');
-    }
-  }
-
-  @override
-  void dispose() {
-    _cameraController.dispose();
-    _textRecognizer.close();
-    super.dispose();
-  }
-
-  Future<void> _scanPrice() async {
-    try {
-      setState(() => _isProcessing = true);
-
-      final image = await _cameraController.takePicture();
-      final inputImage = InputImage.fromFilePath(image.path);
-
-      final recognizedText = await _textRecognizer.processImage(inputImage);
-
-      final ocrText = recognizedText.text;
-
-      final prompt = buildPricePrompt(ocrText);
-
-      final response = await model.generateContent([
-        Content.text(prompt),
-      ]);
-
-
-      if (response.text == null) {
-        if (!mounted) return;
-        Navigator.pop(context, null);
-        return;
-      }
-
-      final decoded = jsonDecode(response.text!);
-      final double? price =
-      (decoded['price'] as num?)?.toDouble();
-      print('R1 ${price.toString()}');
-
-    if (!mounted) return;
-      Navigator.pop(context, price);
-    } catch (e) {
-      debugPrint("R1 Scan error: $e");
-      if (mounted) {
-        Navigator.pop(context, null);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return BlocProvider(
+      create: (context) => PriceScannerBloc()..add(InitializeCameraEvent()),
       child: Scaffold(
         appBar: AppBar(title: const Text("Scan Price")),
-        body: !_isInitialized
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Expanded(
-                    child: AspectRatio(
-                      aspectRatio: _cameraController.value.aspectRatio,
-                      child: CameraPreview(_cameraController),
-                    ),
+        body: BlocConsumer<PriceScannerBloc, PriceScannerState>(
+          listener: (context, state) {
+            if (state is PriceScannerSuccess) {
+              Navigator.pop(context, state.price);
+            }
+            if (state is PriceScannerError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is PriceScannerInitial) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            CameraController? controller;
+            bool isProcessing = false;
+
+            if (state is PriceScannerCameraReady) {
+              controller = state.controller;
+            } else if (state is PriceScannerProcessing) {
+              controller = state.controller;
+              isProcessing = true;
+            }
+
+            if (controller == null) return const SizedBox.shrink();
+
+            return Column(
+              children: [
+                Expanded(
+                  child: AspectRatio(
+                    aspectRatio: controller.value.aspectRatio,
+                    child: CameraPreview(controller),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: ElevatedButton.icon(
-                      onPressed: _isProcessing ? null : _scanPrice,
-                      icon: const Icon(Icons.camera_alt),
-                      label: _isProcessing
-                          ? const Text("Scanning...")
-                          : const Text("SCAN PRICE TAG"),
-                    ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton.icon(
+                    onPressed: isProcessing
+                        ? null
+                        : () => context.read<PriceScannerBloc>().add(ScanPriceEvent()),
+                    icon: const Icon(Icons.camera_alt),
+                    label: Text(isProcessing ? "Scanning..." : "SCAN PRICE TAG"),
                   ),
-                ],
-              ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

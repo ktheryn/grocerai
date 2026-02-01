@@ -145,7 +145,7 @@ class AuthScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: const LinearGradient(
-          colors: [AppColors.accentGreen, AppColors.deepGreen], // The green from your image
+          colors: [AppColors.deepGreen, AppColors.accentGreen],
         ),
         boxShadow: [
           BoxShadow(

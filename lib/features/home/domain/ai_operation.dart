@@ -1,0 +1,1 @@
+enum AiOperation { recipe, restock, none }

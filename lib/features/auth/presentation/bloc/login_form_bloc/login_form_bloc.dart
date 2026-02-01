@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:formz/formz.dart';
@@ -78,7 +79,7 @@ class LoginFormBloc
       } on FirebaseAuthException catch (e) {
         emit(state.copyWith(
             status: FormzSubmissionStatus.failure,
-            authError: e.message ?? AuthError.unknownError.message));
+            authError: AuthError.invalidCredential.message));
       } catch (e) {
         emit(state.copyWith(
             status: FormzSubmissionStatus.failure,
@@ -106,6 +107,13 @@ class LoginFormBloc
                 email: email.value, password: password.value);
 
         if (user.user != null) {
+          final String uid = user.user!.uid;
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'fullName': event.userName,
+            'email': email.value,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+
           await user.user!.sendEmailVerification();
 
           authBloc.add(AuthVerificationRequired(email.value));

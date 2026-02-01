@@ -6,6 +6,11 @@ import 'package:grocerai/features/auth/presentation/bloc/login_form_bloc/login_f
 import 'package:grocerai/features/auth/presentation/cubit/resend_email_timer_cubit.dart';
 import 'package:grocerai/features/auth/presentation/splash.dart';
 import 'package:grocerai/features/auth/presentation/verification_screen.dart';
+import 'package:grocerai/features/home/presentation/bloc/ai_generated_list_bloc/ai_generated_bloc.dart';
+import 'package:grocerai/features/home/presentation/bloc/archive_bloc/archive_bloc.dart';
+import 'package:grocerai/features/home/presentation/bloc/history_bloc/history_bloc.dart';
+import 'package:grocerai/features/home/presentation/bloc/list_bloc/list_bloc.dart';
+import 'package:grocerai/features/home/presentation/cubit/user_name_cubit.dart';
 import 'package:grocerai/features/home/presentation/home.dart';
 import 'package:grocerai/locator.dart';
 import 'firebase_options.dart';
@@ -33,16 +38,21 @@ class MyApp extends StatelessWidget {
         BlocProvider<LoginFormBloc>(
           create: (context) => LoginFormBloc(context.read<AuthBloc>()),
         ),
-        BlocProvider<ResendEmailCubit>(
-          create: (_) => ResendEmailCubit(),
+        BlocProvider<ResendEmailCubit>(create: (_) => ResendEmailCubit()),
+        BlocProvider<ListBloc>(create: (_) => ListBloc()),
+        BlocProvider<AiGeneratedBloc>(create: (_) => AiGeneratedBloc()),
+        BlocProvider(create: (context) => HistoryBloc()..add(LoadHistory())),
+        BlocProvider(
+          create: (context) => UserProfileCubit()..loadUserProfile(),
         ),
+        BlocProvider(create: (context) => ArchiveBloc()),
       ],
       child: MaterialApp(
         navigatorKey: navigatorKey,
         initialRoute: '/splash',
         routes: {
           '/auth': (context) => AuthScreen(),
-          '/home': (context) => const HomeScreen(title: 'GrocerAI',),
+          '/home': (context) => const HomeScreen(title: 'GrocerAI'),
           '/splash': (context) => const SplashScreen(),
           '/verification': (context) => const EmailVerificationPage(),
         },
@@ -50,20 +60,30 @@ class MyApp extends StatelessWidget {
           return BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
               if (state is AuthAuthenticated) {
-                navigatorKey.currentState
-                    ?.pushNamedAndRemoveUntil('/home', (route) => false);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/home',
+                  (route) => false,
+                );
               } else if (state is AuthUnauthenticated) {
-                navigatorKey.currentState
-                    ?.pushNamedAndRemoveUntil('/auth', (route) => false);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/auth',
+                  (route) => false,
+                );
               } else if (state is AuthVerificationState) {
-                navigatorKey.currentState
-                    ?.pushNamedAndRemoveUntil('/verification', (route) => false);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/verification',
+                  (route) => false,
+                );
               } else if (state is AuthInitial) {
-                navigatorKey.currentState
-                    ?.pushNamedAndRemoveUntil('/splash', (route) => false);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/splash',
+                  (route) => false,
+                );
               } else {
-                navigatorKey.currentState
-                    ?.pushNamedAndRemoveUntil('/splash', (route) => false);
+                navigatorKey.currentState?.pushNamedAndRemoveUntil(
+                  '/splash',
+                  (route) => false,
+                );
               }
             },
             child: child,

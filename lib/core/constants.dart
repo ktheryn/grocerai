@@ -17,6 +17,10 @@ class AppColors {
   static final Color hintColor = Colors.grey.shade400;
   static final Color borderColor = Colors.grey.shade200;
 
+  //Text
+  static const Color primaryText = Colors.white;
+
+
   //Error
   static const Color errorRed = Color(0xFFE57373);
 }
