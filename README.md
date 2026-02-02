@@ -5,6 +5,7 @@ The Intelligent Grocery Companion
 GrocerAI is a high-performance Flutter application that leverages Artificial Intelligence to transform how you plan, shop, and manage your kitchen. No more manual typing or forgotten ingredients; let AI handle the logistics.
 
 ✨ Key Features
+
 🥗 AI Recipe-to-List Engine
 Paste a recipe name or a URL, and GrocerAI's NLP engine extracts the necessary ingredients, automatically adjusting quantities and categories for your shopping trip.
 
