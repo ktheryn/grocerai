@@ -39,7 +39,7 @@ OCR: Google ML Kit (for price and label scanning
     <td><img src="https://github.com/user-attachments/assets/5d8b3722-1336-42d9-b910-00fd29b31981" width="200"></td>
     <td><img src="https://github.com/user-attachments/assets/5d49574c-29af-4e3f-8fb7-eb10e4b8e27a" width="200"></td>
     <td><img src="https://github.com/user-attachments/assets/fd20be50-1d2a-4771-b801-28c8af0b746e" width="200"></td>
-    <td><img src="https://github.com/user-attachments/assets/d2d2a4ca-a813-47ef-b73d-410683ddb745" width="200"></td>
+    <td><img src="https://github.com/user-attachments/assets/1654e537-7dde-4bad-a691-0fe2ec5d049e" width="200"></td>
   </tr>
 </table>
 
